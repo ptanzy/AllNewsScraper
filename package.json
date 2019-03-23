@@ -1,0 +1,20 @@
+{
+  "name": "newscraper",
+  "version": "1.0.0",
+  "description": "scrapes and hosts news articles to read and comment on",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "watch": "nodemon server.js"
+  },
+  "author": "Peter Tanzy",
+  "dependencies": {
+    "axios": "^0.18.0",
+    "cheerio": "^1.0.0-rc.2",
+    "express": "^4.16.4",
+    "moment": "^2.24.0",
+    "mongojs": "^2.6.0",
+    "mongoose": "^5.4.19"
+  }
+}
