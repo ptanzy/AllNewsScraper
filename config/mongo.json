@@ -1,0 +1,13 @@
+{
+  "development": {
+    "database": "news-articles",
+    "host": "localhost"
+  },
+  "test": {
+    "database": "news-articles-test",
+    "host": "localhost"
+  },
+  "production": {
+    "use_env_variable": "MONGODB_URI"
+  }
+}

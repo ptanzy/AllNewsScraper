@@ -14,7 +14,14 @@ var app = express();
 app.use(express.static("public"));
 
 // Connect to the Mongo DB
-mongoose.connect("mongodb://localhost/news-articles", { useNewUrlParser: true });
+//mongoose.connect("mongodb://localhost/news-articles", { useNewUrlParser: true });
+app.use(function(req, res, next){
+  if(mongoose.connection.readyState) {
+    next();
+  } else {
+    require('./mongo')().then(() => next());
+  }
+});
 
 //Routes
 require("./routes/api-routes.js")(app, db);
