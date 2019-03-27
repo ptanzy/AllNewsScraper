@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <title>News'N'One - My News</title>
 
+  <script src="https://www.gstatic.com/firebasejs/5.9.1/firebase.js"></script>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css">
   <script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
@@ -21,7 +22,7 @@
 
 <body class="container">
   <ul class="side-nav" id="news-nav">
-    <li><a href="index.html">Create</a></li>
+    <li><a href="create.html">Create</a></li>
     <li><a href="mynews.html">MyNews</a></li>
     <li><a href="allnews.html">AllNews</a></li>
     <li><a href="stats.html">Stats</a></li>
@@ -31,14 +32,16 @@
         <a href="#" class="brand-logo">News'N'One MyNews</a>
         <a href="#" data-activates="mobile-demo" class="button-collapse"><i class="material-icons">menu</i></a>
         <ul id="nav-mobile" class="right hide-on-med-and-down">
-          <li><a href="index.html">Create</a></li>
+          <li><a href="create.html">Create</a></li>
           <li><a href="allnews.html">AllNews</a></li>
           <li><a href="stats.html">Stats</a></li>
+          <li><a href="/" id="sign-out">Logout</a></li>          
         </ul>
         <ul class="side-nav" id="mobile-demo">
-          <li><a href="index.html">Create</a></li>
+          <li><a href="create.html">Create</a></li>
           <li><a href="allnews.html">AllNews</a></li>
           <li><a href="stats.html">Stats</a></li>
+          <li><a href="/" id="sign-out">Logout</a></li>          
         </ul>
       </div>
       <div class="nav-content">

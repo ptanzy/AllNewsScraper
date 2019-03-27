@@ -1,7 +1,76 @@
+var config = {
+    apiKey: "AIzaSyBIZsSFu85PGnuJpFR_cubOwK-INBy5FxU",
+    authDomain: "allnewsscraper.firebaseapp.com",
+    databaseURL: "https://allnewsscraper.firebaseio.com",
+    projectId: "allnewsscraper",
+    storageBucket: "allnewsscraper.appspot.com",
+    messagingSenderId: "996681927610"
+  };
+  firebase.initializeApp(config);
+
+  var auth = firebase.auth();
 
 $(document).ready(function () {
+  
+    $('#create-user').on('submit', function(event){
+      event.preventDefault();
+      var userData = {
+          email: $('#email').val(),
+          password: $('#password').val(),
+          username: 0
+      };
+      auth.createUserWithEmailAndPassword(userData.email, userData.password)
+      .then(function(user){
+          userData.username = user.user.uid;
+          localStorage.setItem('username', user.user.uid.toString());
+          $.post("/api/users", userData)
+          .then(function() {
+            getUsers();
+          });
+          
+      })
+      .catch(function(error){
+          alert(error);
+        });
+    
+      function getUsers() {
+        $.get("/api/users", function(data) {
+          var uname = localStorage.getItem("username");
+          for (var i=0; i < data.length; i++){
+            if (data[i].username == uname){
+              localStorage.setItem('userID', data[i].id.toString());
+              window.location.href = "/create";
+            }
+          }
+        });
+      }
+      
+    });
+  
+    $('#sign-in').on('submit', function(event){
+      event.preventDefault();
+      var email = $('#sign-in-email').val();
+      var password = $('#sign-in-password').val();
+      auth.signInWithEmailAndPassword(email, password)
+      .then(function(user){
+          console.log(user);
+          localStorage.setItem('userID', user.user.uid);
+          window.location.href = "/create"; //redirects user to datasets page
+      })
+      .catch(function(error){
+          alert(error);
+      });
+      
+    });
+  
+  
+    $("#sign-out").on('click', function() {
+        auth.signOut();
+    });
+
     $('select').material_select();
     $(".button-collapse").sideNav();
+    $('.modal').modal();
     // $('span.activator').mouseover(function(e){
     //     $(this).trigger('click');
     // });
@@ -29,6 +98,7 @@ $('#news-form').submit(function(e) {
         var $container = $("#scraped-articles");
         var $cards = $();
         for(var i = 0; i<data.length; i++){
+            data[i].user = localStorage.getItem('userID');
             var $card = createArticleCard(data[i], i);
             $card.data(data[i]);
             $cards = $cards.add($card);
@@ -51,6 +121,39 @@ function addClickListinerToCardButtons(){
             var data = $card.data();
             var $container = $("#comment-articles");
             var $newCard = createCommentCard(data);
+
+            // $.ajax({
+            //   method: "POST",
+            //   url: "/article",
+            //   data: data,
+            //   success: onPostArticle
+            // });
+
+            // function onPostArticle(resp) {
+            //     // Log the response
+            //     data = resp._id;
+            //     console.log(resp);
+            // }
+
+            $.post("/article", data)
+            .done(
+             function(resp){
+                 // do something when response is ok
+                 data._id = resp._id;
+                 console.log(resp);
+              }
+            ).fail(
+             function(resp){
+                   
+              }
+          );
+
+            // With that done
+            //   .then(function(data) {
+            //       // Log the response
+            //       console.log(data);
+            //   });
+
             $newCard.data(data);
             Materialize.toast('Article Added and Ready For Comments!', 2000)
             $container.append($newCard)
@@ -91,28 +194,36 @@ function addCommentInputSubmitListeners($input, $commentCard){
         debugger;
         var data = $commentCard.data();
         var $params = {};
-        $params.id = data._id;
+        var articleId = data._id;
+        var user = localStorage.getItem('userID');
         $params.header = $(".comment-header").val();
         $params.body = $(".materialize-textarea").val();
 
-        // Run a POST request to change the note, using what's entered in the inputs
-        $.ajax({
-            method: "POST",
-            url: "/articles/" + $params.id,
-            data: {
-            // Value taken from title input
-            header: $params.header,
-            // Value taken from note textarea
-            body: $params.body
-            }
-        })
-        // With that done
-        .then(function(data) {
-            // Log the response
-            console.log(data);
+        // // Run a POST request to change the note, using what's entered in the inputs
+        // $.ajax({
+        //     method: "POST",
+        //     url: "/comment/"+articleId+"/"+user,
+        //     data: $params,
+        //     success: onPostComment
+        // });
 
-        });
+        // function onPostComment(resp) {
+        //     // Log the response
+        //     console.log(resp);
+        // }
 
+        $.post("/comment/"+articleId+"/"+user, $params)
+           .done(
+            function(resp){
+                // do something when response is ok
+                console.log(resp);
+             }
+           ).fail(
+            function(resp){
+
+             }
+         );
+        //TODO figure out how to add error handling with the then and data arg
 
         var $nocomments = $commentCard.find("p.no-comments");
         if($nocomments.length){

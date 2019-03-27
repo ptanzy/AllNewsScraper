@@ -10,6 +10,9 @@ var PORT = process.env.PORT || 8080;
 // Initialize Express
 var app = express();
 
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
 //Static dir
 app.use(express.static("public"));
 
@@ -24,6 +27,7 @@ app.use(function(req, res, next){
 });
 
 //Routes
+require("./routes/user-api-routes.js")(app, db);
 require("./routes/api-routes.js")(app, db);
 require("./routes/html-routes.js")(app);
 

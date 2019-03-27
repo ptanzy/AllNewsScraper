@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <title>News'N'One</title>
 
+  <script src="https://www.gstatic.com/firebasejs/5.9.1/firebase.js"></script>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css">
   <script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
@@ -15,90 +16,80 @@
 
 </head>
 
-<body class="container">
+<body>
 
-  <ul class="side-nav" id="news-nav">
-    <li><a href="mynews.html">MyNews</a></li>
-    <li><a href="allnews.html">AllNews</a></li>
-    <li><a href="stats.html">Stats</a></li>
-  </ul>
-  <nav class="nav-extended">
-      <div class="nav-wrapper">
-        <a href="#" class="brand-logo">News'N'One Create</a>
-        <a href="#" data-activates="news-nav" class="button-collapse"><i class="material-icons">menu</i></a>
-        <ul id="nav-mobile" class="right hide-on-med-and-down">
-          <li><a href="mynews.html">MyNews</a></li>
-          <li><a href="allnews.html">AllNews</a></li>
-          <li><a href="stats.html">Stats</a></li>
-        </ul>
-        <ul class="side-nav" id="mobile-demo">
-          <li><a href="mynews.html">MyNews</a></li>
-          <li><a href="allnews.html">AllNews</a></li>
-          <li><a href="stats.html">Stats</a></li>
-        </ul>
-      </div>
-      <div class="nav-content">
-        <ul class="tabs tabs-transparent">
-          <li class="tab"><a class="active" href="#create">Create</a></li>
-          <li class="tab"><a  href="#comment-articles">Comment</a></li>
-        </ul>
-      </div>
-    </nav>
-    <div id="create" class="col s12">
-      <form id="news-form" class="col s12">
-        <div class="row">
-          <select id="news-site" class="browser-default" required>
-            <option value="" disabled selected>Select news source</option>
-            <option value="New York Times">New York Times</option>
-          </select>
-        </div>     
-        <div class="row">
-          <div class="input-field col s6">
-            <i class="material-icons prefix">sort</i>
-            <select id="news-sort">
-              <option value="" disabled selected>Sort news by</option>
-              <option value="best">Relevance</option>
-              <option value="newest">Newest</option>
-              <option value="oldest">Oldest</option>
-            </select>
-            <label>Sort Metric</label>
-          </div>
-          <div class="input-field col s6">
-            <i class="material-icons prefix">event</i>  
-            <input type="date" class="datepicker" id="startdate">
-            <label for="startdate" class="active">News Start Date</label>
-          </div>          
-        </div>
-        <div class="row">
-          <div class="input-field col s6">
-            <i class="material-icons prefix">search</i>      
-            <input id="search" type="search" required>
-            <label for="search" class="active">Search Term</label>
-            <i class="material-icons">close</i>
-          </div>
-          <div class="input-field col s6">
-            <i class="material-icons prefix">event</i>
-            <input type="date" class="datepicker" id="enddate">
-            <label for="enddate" class="active">News End Date </label>
-          </div>
-        </div>
-        <div class="row">
-          <h5 class="header col s6">Your News Results</h3>
-          <button class="btn waves-effect waves-light col s6" type="submit" name="action">Search NYT
-            <i class="material-icons right">search</i>
-          </button>
-        </div>
-      </form>
-      <div id="scraped-articles" class="col s12">
+  <nav>
+    <div class="nav-wrapper">
+      <a href="#" class="brand-logo">Logo</a>
+      <ul id="nav-mobile" class="right hide-on-med-and-down">
+        <li><a class="waves-effect waves-light btn modal-trigger" href="#modalLogin"><i class="material-icons">input</i>Login</a></li>
+        <li><a class="waves-effect waves-light btn modal-trigger" href="#modalRegister"><i class="material-icons">done</i>Register</a></li>
+      </ul>
+    </div>
+  </nav>
 
+  <div id="modalLogin" class="modal">
+    <div class="container">
+      <h4>Login</h4>
+      <div class="row">
+        <form class="col s12" id="sign-in">
+          <div class="row">
+            <div class="input-field col s12">
+            <input id="sign-in-email" type="email" class="validate" required>
+            <label for="email">Email</label>
+            </div>
+          </div>
+          <div class="row">
+            <div class="input-field col s12">
+            <input id="sign-in-password" type="password" class="validate" minlength="6" required>
+            <label for="password">Password</label>
+            </div>
+          </div>
+          <div class="row">
+            <div class="input-field col s6">
+            <button class="btn btn-large waves-effect waves-light btn" type="submit" name="action">Login
+                <i class="material-icons right">input</i>
+            </button>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
-    <div id="comment-articles" class="col s12">
+  </div>
 
+  <div id="modalRegister" class="modal">
+    <div class="container">
+      <h4>Register</h4>  
+      <div class="row">
+        <form class="col s12" id="create-user">
+          <div class="row">
+            <div class="input-field col s12">
+            <input id="email" type="email" class="validate" required>
+            <label for="email">Email</label>
+            </div>
+          </div>
+          <div class="row">
+            <div class="input-field col s12">
+            <input id="password" type="password" class="validate" minlength="6" required>
+            <label for="password">Password</label>
+            </div>
+          </div>
+          <div class="row">
+            <div class="input-field col s6">
+            <button class="btn btn-large btn-register waves-effect waves-light" type="submit" name="action">Register
+                <i class="material-icons right">done</i>
+            </button>
+            </div>
+          </div>
+        </form>
+      </div>
     </div>
-
+  </div>
 
   <script src="js/app.js"></script>
 </body>
 
 </html>
+
+
+
