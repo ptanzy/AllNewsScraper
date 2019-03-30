@@ -74,10 +74,63 @@ $(document).ready(function () {
     // $('span.activator').mouseover(function(e){
     //     $(this).trigger('click');
     // });
-
 });
 
+$(function(){
+    if($('body').is('.mynews')){
+        var user = localStorage.getItem('userID');
+        var articleData = [];
+        $.getJSON("/articles/mine/"+user, function(data) {
+            //all of my articles
+            printArticlesToTab("#mine", data);
+            //all of user articles by Date
+            sortArticlesByDate(data)
+            printArticlesToTab("#mine-time", data);
+        });
 
+        
+
+    }
+});
+
+$(function(){
+    if($('body').is('.allnews')){
+
+    }
+});
+
+function sortArticlesByDate(articles){
+    articles.sort(function(a, b) {
+        a = parseForDate(a._id);
+        b = parseForDate(b._id);
+        return a>b ? -1 : a<b ? 1 : 0;
+    });
+}
+
+function parseForDate(articleId){
+    var timestamp = articleId.toString().substring(0,8);
+    var date = new Date( parseInt( timestamp, 16 ) * 1000 );
+    return date;
+}
+
+function printArticlesToTab($tabContainer, data){
+    var $container = $($tabContainer);
+    var $cards = $();
+    for(var i = 0; i<data.length; i++){
+        
+        var $card = createArticleCard(data[i], i);
+        $card.data(data[i]);
+        $cards = $cards.add($card);
+    }
+    $container.append($cards)
+        .ready(addClickListinerToCardButtons($cards));
+}
+
+$(function(){
+    if($('body').is('.stats')){
+
+    }
+});
 // $("a.btn-floating").on("click", function(){ //a#btn-floating.halfway-fab.waves-effect.waves-light.green.add-card
 //   event.stopPropagation();
 //   event.stopImmediatePropagation();
@@ -93,22 +146,28 @@ $('#news-form').submit(function(e) {
     $params.sdate = $("#startdate").val()
     $params.edate = $("#enddate").val()
     $params.search = $("#search").val()
-
+    var $cards;
+    var $btns;
     $.getJSON("/scrape", $params, function(data) {
         var $container = $("#scraped-articles");
-        var $cards = $();
+        $cards = $();
+        $btns = $();
         for(var i = 0; i<data.length; i++){
             data[i].user = localStorage.getItem('userID');
             var $card = createArticleCard(data[i], i);
             $card.data(data[i]);
             $cards = $cards.add($card);
+            var $btn = $card.find("a.add-card");
+            $btns = $btns.add($btn);
         }
         $container.append($cards)
-    }).then(addClickListinerToCardButtons);
+    }).then(function(){
+        addClickListinerToCardButtons($btns);
+    });
 });
 
-function addClickListinerToCardButtons(){
-    var elems = Array.prototype.slice.call(document.querySelectorAll("a.add-card"));
+function addClickListinerToCardButtons(els){
+    var elems = Array.prototype.slice.call(els);
 
     // Now, you can safely use .forEach()
     elems.forEach(function(el) {
@@ -120,7 +179,6 @@ function addClickListinerToCardButtons(){
             var $card = $me.closest(".article-card");
             var data = $card.data();
             var $container = $("#comment-articles");
-            var $newCard = createCommentCard(data);
 
             // $.ajax({
             //   method: "POST",
@@ -139,12 +197,23 @@ function addClickListinerToCardButtons(){
             .done(
              function(resp){
                  // do something when response is ok
+                 if(resp.type === "error"){
+                    var $newCard = createCommentCard(resp);
+                    Materialize.toast('Server Error: Article not added. Try again.', 3000)
+                    $container.append($newCard);
+                    return;
+                 }
                  data._id = resp._id;
+                 var $newCard = createCommentCard(data);
+                 $newCard.data(data);
+                 Materialize.toast('Article Added and Ready For Comments!', 2000)
+                 $container.append($newCard)
+                     .ready(addCommentCardListeners($newCard));
                  console.log(resp);
               }
             ).fail(
              function(resp){
-                   
+                   console.log("Fail: "+resp);
               }
           );
 
@@ -154,16 +223,14 @@ function addClickListinerToCardButtons(){
             //       console.log(data);
             //   });
 
-            $newCard.data(data);
-            Materialize.toast('Article Added and Ready For Comments!', 2000)
-            $container.append($newCard)
-                .ready(addCommentCardListeners($newCard));
+
             //console.log(this.id, el); 
         });
     })
 }
 
 function addCommentCardListeners($commentCard){
+    var data = $commentCard.data();
     var $buttonCreate = $commentCard.find("a.comment-card");
     $buttonCreate[0].addEventListener("click", function(evt) {
         $(this).trigger('click');
@@ -184,6 +251,34 @@ function addCommentCardListeners($commentCard){
         var $comments = $(this).closest("div.comment-section");
         var $inputField = $comments.find("form.comment-input");
         $inputField.remove();
+    });
+    var $buttonDelete = $commentCard.find("i.delete-article");
+    $buttonDelete[0].addEventListener("click", function(evt) {
+        var $commentCard = $(this).closest("div.comments");
+        // $.ajax({
+        //     url: "/delete/article/"+data._id,
+        //     type: 'DELETE',
+        //     success: function(result) {
+        //         $commentCard.remove();
+        //     }, 
+        //     failure: function(resp){
+        //       console.log("Fail: "+resp);
+        //       Materialize.toast('Server Error: Article not deleted. Try again.', 3000)
+        //     }
+        // });
+        $.get("/delete/article/"+data._id)
+          .done(
+           function(resp){
+               // do something when response is ok
+               $commentCard.remove();
+            }
+          ).fail(
+           function(resp){
+                 console.log("Fail: "+resp);
+                 Materialize.toast('Server Error: Article not deleted. Try again.', 3000)
+            }
+          );
+ 
     });
 };
 
@@ -215,27 +310,34 @@ function addCommentInputSubmitListeners($input, $commentCard){
         $.post("/comment/"+articleId+"/"+user, $params)
            .done(
             function(resp){
+                if(resp.type === "error"){
+                    Materialize.toast(`Server Error: ${resp.name} ${resp.message} 
+                        Try again to add a comment.`, 3000);
+                    return;
+                }
                 // do something when response is ok
+                var $nocomments = $commentCard.find("p.no-comments");
+                if($nocomments.length){
+                    var $commentSet = createCollapsibleCommentSet($params);
+                    $nocomments[0].replaceWith($commentSet[0])
+                    //.ready( ( $('.collapsible').collapsible() )() );
+                    $('.collapsible').collapsible()
+                }else{
+                    var $commentSet = $commentCard.find("ul.collapsible");
+                    var $commentSegment = createCollapsibleCommentSegment($params);
+                    $commentSet.append($commentSegment);
+                }
                 console.log(resp);
              }
            ).fail(
             function(resp){
-
+                Materialize.toast(`Server failed to respond.
+                        Try again to add a comment.`, 3000);
              }
          );
         //TODO figure out how to add error handling with the then and data arg
 
-        var $nocomments = $commentCard.find("p.no-comments");
-        if($nocomments.length){
-            var $commentSet = createCollapsibleCommentSet($params);
-            $nocomments[0].replaceWith($commentSet[0])
-            //.ready( ( $('.collapsible').collapsible() )() );
-            $('.collapsible').collapsible()
-        }else{
-            var $commentSet = $commentCard.find("ul.collapsible");
-            var $commentSegment = createCollapsibleCommentSegment($params);
-            $commentSet.append($commentSegment);
-        }
+
         // var $comments = $(this).closest("div.comment-section");
         // var $inputField = $comments.find("div.comment-input");
         // $inputField.remove();
@@ -322,11 +424,18 @@ function createArticleCard(data, i){
 }
 
 function createCommentCard(data, i){
+    if(data.type === "error"){
+        data.title = "Error: "+data.name;
+        data.body = data.message+"\nComments disabled";
+        data.siteUrl = "#";
+        data.link = "";
+        data.title = ""
+    }
     cardTemplate = `
-        <div class="card medium white">
+        <div class="card medium white comments">
             <div class="card-content black-text">
                 <a class="btn-floating halfway-fab waves-effect waves-light blue activator comment-card"><i class="material-icons">comment</i></a>
-                <span class="card-title">${data.title}</span>
+                <span class="card-title"><i class="material-icons right delete-article">close</i>${data.title}</span>
                 <p>${data.body}</p>
             </div>
             <div class="card-action">

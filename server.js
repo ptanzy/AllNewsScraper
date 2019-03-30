@@ -18,22 +18,18 @@ app.use(express.static("public"));
 
 // Connect to the Mongo DB
 //mongoose.connect("mongodb://localhost/news-articles", { useNewUrlParser: true });
-// app.use(function(req, res, next){
-//   if(mongoose.connection.readyState) {
-//     next();
-//   } else {
-//     require('./mongo')().then(() => next());
-//   }
-// });
-
-var MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/news-articles";
-
-mongoose.connect(MONGODB_URI);
-
+app.use(function(req, res, next){
+  if(mongoose.connection.readyState) {
+    next();
+  } else {
+    require('./mongo')().then(() => next());
+  }
+});
 
 //Routes
 require("./routes/user-api-routes.js")(app, db);
-require("./routes/api-routes.js")(app, db);
+require("./routes/create-api-routes.js")(app, db);
+require("./routes/mine-api-routes.js")(app, db);
 require("./routes/html-routes.js")(app);
 
   

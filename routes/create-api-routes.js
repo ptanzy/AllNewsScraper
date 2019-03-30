@@ -88,20 +88,6 @@ module.exports = function(app, db){
             res.send(results);
         });
     });
-
-    //gets all Articles from the db
-  app.get("/articles", function(req, res) {
-    //all of the document in the article collection
-    db.Article.find({})
-      .then(function(dbArticle) {
-        //returns articles back to client
-        res.json(dbArticle);
-      })
-      .catch(function(err) {
-        //returns error back
-        res.json(err);
-      });
-  });
   
   //gets article by id
   app.get("/articles/:id", function(req, res) {
@@ -117,6 +103,7 @@ module.exports = function(app, db){
       .catch(function(err) {
         //error to client
         console.log("Article Comment add err: "+err)
+        err.type = "error";
         res.json(err);
       });
   });
@@ -124,13 +111,14 @@ module.exports = function(app, db){
   //route for adding comment to article
   app.post("/article", function(req, res) {
     // Create a new note and pass the req.body to the entry
-    db.Article.findOneAndUpdate({title: req.body.title}, req.body, {upsert: true})
+    db.Article.findOneAndUpdate({title: req.body.title}, req.body, {new: true, upsert: true})
     .then(function(dbArticle) {
       res.json(dbArticle)
       console.log("ADDED ARTICLE: "+dbArticle);
     })
     .catch(function(err) {
       console.log("Article Add Error: "+err)
+      err.type = "error";
       res.json(err);
     });
   });
@@ -153,11 +141,42 @@ module.exports = function(app, db){
       .catch(function(err) {
         // If an error occurred, send it to the client
         console.log("Article Update Error: "+err)
+        err.type = "error";
         res.json(err);
       });
   });
   
-}
+  app.get("/delete/article/:id", function(req, res){
+    db.Comment.remove({_id: req.params.id})
+    .then(function(dbArticle) {
+      // If we were able to successfully update an Article, send it back to the client
+      console.log("UPDATED ARTICLE: "+dbArticle);
+      res.json(dbArticle);
+    })
+    .catch(function(err) {
+      // If an error occurred, send it to the client
+      console.log("Article Update Error: "+err)
+      err.type = "error";
+      res.json(err);
+    });
+  });
+  
+  app.get("/delete/comment/:id", function(req, res){
+    db.Comment.remove({_id: req.params.id})
+    .then(function(dbArticle) {
+      // If we were able to successfully update an Article, send it back to the client
+      console.log("UPDATED ARTICLE: "+dbArticle);
+      res.json(dbArticle);
+    })
+    .catch(function(err) {
+      // If an error occurred, send it to the client
+      console.log("Article Update Error: "+err)
+      err.type = "error";
+      res.json(err);
+    });
+  });
+
+};
 
 // function dateAs8LengthString(date){
 //     var year = ""+date.getFullYear();
