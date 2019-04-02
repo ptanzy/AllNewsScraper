@@ -1,3 +1,5 @@
+var Comment = require("./Comment");
+
 var mongoose = require("mongoose");
 
 // Save a reference to the Schema constructor
@@ -39,10 +41,22 @@ var ArticleSchema = new Schema({
   // note is an object that stores a Note id
   // The ref property links the ObjectId to the Note model
   // This allows us to populate the Article with an associated Note
-  comment: {
+  comments: [{
     type: Schema.Types.ObjectId,
     ref: "Comment"
-  }
+  }]
+});
+
+ArticleSchema.post('findOneAndRemove', function(dbArticle) {
+  // 'this' is the client being removed. Provide callbacks here if you want
+  // to be notified of the calls' result.
+  Comment.remove({articleId: dbArticle._id}).exec(function(err, resp){
+    if(err){
+      console.log(err)
+    }else{
+      console.log(resp);
+    }
+  });
 });
 
 // This creates our model from the above schema, using mongoose's model method

@@ -10,6 +10,8 @@ var config = {
 
   var auth = firebase.auth();
 
+var mynews = false;
+var allnews = false;
 $(document).ready(function () {
   
     $('#create-user').on('submit', function(event){
@@ -76,26 +78,47 @@ $(document).ready(function () {
     // });
 });
 
+
 $(function(){
-    if($('body').is('.mynews')){
-        var user = localStorage.getItem('userID');
-        var articleData = [];
-        $.getJSON("/articles/mine/"+user, function(data) {
-            //all of my articles
-            printArticlesToTab("#mine", data);
-            //all of user articles by Date
-            sortArticlesByDate(data)
-            printArticlesToTab("#mine-time", data);
-        });
-
-        
-
+    if($('body').is('.mynews') && !mynews){
+      mynews = true;
+      var user = localStorage.getItem('userID');
+      $.getJSON("/articles/mine/"+user, function(data) {
+          if(data.type === "error"){
+            Materialize.toast('Server Error. Issue finding article. Please try again.', 3000);
+            return;
+          }
+          if(data.length === 0){
+            Materialize.toast('MyNews has no article. Add your first article!', 3000)
+            return;
+          }
+          //all of my articles
+          printArticlesToTab("#mine", data);
+          //all of user articles by Date
+          sortArticlesByDate(data)
+          printArticlesToTab("#mine-time", data);
+      });
     }
 });
 
 $(function(){
-    if($('body').is('.allnews')){
-
+    if($('body').is('.allnews') && !allnews){
+      allnews = true;
+      $.getJSON("/articles/all/", function(data) {
+        if(data.type === "error"){
+          Materialize.toast('Server Error. Issue finding article. Please try again.', 3000);
+          return;
+        }        
+        if(data.length === 0){
+          Materialize.toast('AllNews has no article. Be the first to add an article!', 3000)
+          return;
+        }
+        //all of my articles
+        printArticlesToTab("#all", data);
+        //all of user articles by Date
+        sortArticlesByDate(data)
+        printArticlesToTab("#all-time", data);
+     });
     }
 });
 
@@ -114,16 +137,17 @@ function parseForDate(articleId){
 }
 
 function printArticlesToTab($tabContainer, data){
+
     var $container = $($tabContainer);
     var $cards = $();
     for(var i = 0; i<data.length; i++){
         
-        var $card = createArticleCard(data[i], i);
+        var $card = createCommentCard(data[i], i);
         $card.data(data[i]);
         $cards = $cards.add($card);
     }
     $container.append($cards)
-        .ready(addClickListinerToCardButtons($cards));
+        .ready(addCommentCardListeners($cards));
 }
 
 $(function(){
@@ -199,14 +223,14 @@ function addClickListinerToCardButtons(els){
                  // do something when response is ok
                  if(resp.type === "error"){
                     var $newCard = createCommentCard(resp);
-                    Materialize.toast('Server Error: Article not added. Try again.', 3000)
+                    Materialize.toast('Server Error: Article not added. Try again.', 3000);
                     $container.append($newCard);
                     return;
                  }
                  data._id = resp._id;
                  var $newCard = createCommentCard(data);
                  $newCard.data(data);
-                 Materialize.toast('Article Added and Ready For Comments!', 2000)
+                 Materialize.toast('Article Added and Ready For Comments!', 2000);
                  $container.append($newCard)
                      .ready(addCommentCardListeners($newCard));
                  console.log(resp);
@@ -255,115 +279,124 @@ function addCommentCardListeners($commentCard){
     var $buttonDelete = $commentCard.find("i.delete-article");
     $buttonDelete[0].addEventListener("click", function(evt) {
         var $commentCard = $(this).closest("div.comments");
-        // $.ajax({
-        //     url: "/delete/article/"+data._id,
-        //     type: 'DELETE',
-        //     success: function(result) {
-        //         $commentCard.remove();
-        //     }, 
-        //     failure: function(resp){
-        //       console.log("Fail: "+resp);
-        //       Materialize.toast('Server Error: Article not deleted. Try again.', 3000)
+        $.ajax({
+            url: "/delete/article/"+data._id,
+            type: 'GET',
+            success: function(result) {
+                $commentCard.remove();
+            }, 
+            failure: function(resp){
+              console.log("Fail: "+resp);
+              Materialize.toast('Server Error: Article not deleted. Try again.', 3000)
+            }
+        });
+        // $.get("/delete/article/"+data._id)
+        //   .done(
+        //    function(resp){
+        //        // do something when response is ok
+        //        $commentCard.remove();
         //     }
-        // });
-        $.get("/delete/article/"+data._id)
-          .done(
-           function(resp){
-               // do something when response is ok
-               $commentCard.remove();
-            }
-          ).fail(
-           function(resp){
-                 console.log("Fail: "+resp);
-                 Materialize.toast('Server Error: Article not deleted. Try again.', 3000)
-            }
-          );
+        //   ).fail(
+        //    function(resp){
+        //          console.log("Fail: "+resp);
+        //          Materialize.toast('Server Error: Article not deleted. Try again.', 3000)
+        //     }
+        //   );
  
     });
 };
 
 function addCommentInputSubmitListeners($input, $commentCard){
-    var $commentForm = $input.find("form.comment-input");
-    $commentForm[0].addEventListener("submit", function(evt) {
-        event.preventDefault();
-        debugger;
+  var $commentForm = $input.find("form.comment-input");
+  $commentForm[0].addEventListener("submit", function(evt) {
+      event.preventDefault();
+      debugger;
+      var data = $commentCard.data();
+      var $params = {};
+      var articleId = data._id;
+      var user = localStorage.getItem('userID');
+      $params.articleId = articleId;
+      $params.header = $(".comment-header").val();
+      $params.body = $(".materialize-textarea").val();
+
+
+
+      $.post("/comment/"+articleId+"/"+user, $params)
+         .done(
+          function(resp){
+              if(resp.type === "error"){
+                  Materialize.toast(`Server Error: ${resp.name} ${resp.message} 
+                      Try again to add a comment.`, 3000);
+                  return;
+              }
+              // do something when response is ok
+              var $nocomments = $commentCard.find("p.no-comments");
+              if($nocomments.length){
+                  var $commentSet = createCollapsibleCommentSet($params);
+                  $nocomments[0].replaceWith($commentSet[0])
+                  //.ready( ( $('.collapsible').collapsible() )() );
+                  $('.collapsible').collapsible()
+                  addCommentSegmentListiners($commentCard);
+              }else{
+                  var $commentSet = $commentCard.find("ul.collapsible");
+                  var $commentSegment = createCollapsibleCommentSegment($params);
+                  $commentSet.append($commentSegment);
+                  addCommentSegmentListiners($commentCard);
+              }
+              console.log(resp);
+           }
+         ).fail(
+          function(resp){
+              Materialize.toast(`Server failed to respond.
+                      Try again to add a comment.`, 3000);
+           }
+       );
+      //TODO figure out how to add error handling with the then and data arg
+
+      function addCommentSegmentListiners($commentCard){
         var data = $commentCard.data();
-        var $params = {};
-        var articleId = data._id;
-        var user = localStorage.getItem('userID');
-        $params.header = $(".comment-header").val();
-        $params.body = $(".materialize-textarea").val();
-
-        // // Run a POST request to change the note, using what's entered in the inputs
-        // $.ajax({
-        //     method: "POST",
-        //     url: "/comment/"+articleId+"/"+user,
-        //     data: $params,
-        //     success: onPostComment
-        // });
-
-        // function onPostComment(resp) {
-        //     // Log the response
-        //     console.log(resp);
-        // }
-
-        $.post("/comment/"+articleId+"/"+user, $params)
-           .done(
-            function(resp){
-                if(resp.type === "error"){
-                    Materialize.toast(`Server Error: ${resp.name} ${resp.message} 
-                        Try again to add a comment.`, 3000);
-                    return;
+        var $commentDelete = $commentCard.find("i.delete-comment");
+        $commentDelete[0].addEventListener("click", function(evt) {
+            var $commentSeg = $(this).closest("li.comment-seg");
+            $.ajax({
+                url: "/delete/comment/"+data._id,
+                type: 'GET',
+                success: function(result) {
+                    $commentSeg.remove();
+                }, 
+                failure: function(resp){
+                  console.log("Fail: "+resp);
+                  Materialize.toast('Server Error: Article not deleted. Try again.', 3000)
                 }
-                // do something when response is ok
-                var $nocomments = $commentCard.find("p.no-comments");
-                if($nocomments.length){
-                    var $commentSet = createCollapsibleCommentSet($params);
-                    $nocomments[0].replaceWith($commentSet[0])
-                    //.ready( ( $('.collapsible').collapsible() )() );
-                    $('.collapsible').collapsible()
-                }else{
-                    var $commentSet = $commentCard.find("ul.collapsible");
-                    var $commentSegment = createCollapsibleCommentSegment($params);
-                    $commentSet.append($commentSegment);
-                }
-                console.log(resp);
-             }
-           ).fail(
-            function(resp){
-                Materialize.toast(`Server failed to respond.
-                        Try again to add a comment.`, 3000);
-             }
-         );
-        //TODO figure out how to add error handling with the then and data arg
+            });
 
+     
+        });
+      }      
 
-        // var $comments = $(this).closest("div.comment-section");
-        // var $inputField = $comments.find("div.comment-input");
-        // $inputField.remove();
-    });
+  });
 }
 
 function createCollapsibleCommentSet(data){
-    var commentSet = `
-      <ul class="collapsible" data-collapsible="accordion">
-        <li>
-          <div class="collapsible-header">${data.header}</div>
-          <div class="collapsible-body"><span>${data.body}</span></div>
-        </li>
-      </ul>
-    `
-    return $(commentSet);
+  var commentSet = `
+    <ul class="collapsible" data-collapsible="accordion">
+      <li class="comment-seg">
+        <div class="collapsible-header">${data.header}<i class="material-icons right delete-comment">clear</i></div>
+        <div class="collapsible-body"><span>${data.body}</span></div>
+      </li>
+    </ul>
+  `
+  return $(commentSet);
 }
 
 function createCollapsibleCommentSegment(data){
-    var commentSet = `
-        <li>
-          <div class="collapsible-header">${data.header}</div>
-          <div class="collapsible-body"><span>${data.body}</span></div>
-        </li>
-    `
-    return $(commentSet);
+  var commentSet = `
+      <li class="comment-seg">
+        <div class="collapsible-header">${data.header}<i class="material-icons right delete-comment">clear</i></div>
+        <div class="collapsible-body"><span>${data.body}</span></div>
+      </li>
+  `
+  return $(commentSet);
 }
 
 function createCommentInput(){
@@ -440,7 +473,7 @@ function createCommentCard(data, i){
             </div>
             <div class="card-action">
                 <a href="${data.siteUrl+data.link}" target="_blank">Read Article</a>
-                <a href="#" class="activator">View Comments</a>
+                <a class="activator">View Comments</a>
             </div>
             <div class="card-reveal comment-section">
                 <span class="card-title grey-text text-darken-4"><i class="material-icons right close-comments">close</i>${data.title}</span>

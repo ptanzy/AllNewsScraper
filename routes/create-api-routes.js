@@ -131,7 +131,7 @@ module.exports = function(app, db){
         // If a Note was created successfully, find one Article with an `_id` equal to `req.params.id`. Update the Article to be associated with the new Note
         // { new: true } tells the query that we want it to return the updated User -- it returns the original by default
         // Since our mongoose query returns a promise, we can chain another `.then` which receives the result of the query
-        return db.Article.findOneAndUpdate({ _id: req.params.id, user: req.params.user }, { note: dbComment._id }, { new: true });
+        return db.Article.findOneAndUpdate({ _id: req.params.id, user: req.params.user }, { $push: { comments: dbComment._id } }, { new: true });
       })
       .then(function(dbArticle) {
         // If we were able to successfully update an Article, send it back to the client
@@ -147,7 +147,8 @@ module.exports = function(app, db){
   });
   
   app.get("/delete/article/:id", function(req, res){
-    db.Comment.remove({_id: req.params.id})
+    var comment = db.comment;
+    db.Article.findOneAndRemove({_id: req.params.id})
     .then(function(dbArticle) {
       // If we were able to successfully update an Article, send it back to the client
       console.log("UPDATED ARTICLE: "+dbArticle);
@@ -162,8 +163,8 @@ module.exports = function(app, db){
   });
   
   app.get("/delete/comment/:id", function(req, res){
-    db.Comment.remove({_id: req.params.id})
-    .then(function(dbArticle) {
+    db.Comment.findOne({_id: req.params.id})
+    .deleteOne(function(dbArticle) {
       // If we were able to successfully update an Article, send it back to the client
       console.log("UPDATED ARTICLE: "+dbArticle);
       res.json(dbArticle);
